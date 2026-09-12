@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://aseamainscene"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/boat.gd" id="2_boat"]
+[ext_resource type="Script" path="res://scripts/sailing_camera.gd" id="3_cam"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Boat" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("2_boat")
+
+[node name="SailingCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 16, 30)
+current = true
+fov = 65.0
+far = 8000.0
+script = ExtResource("3_cam")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
+
+[node name="ChartLayer" type="CanvasLayer" parent="."]
+layer = 20

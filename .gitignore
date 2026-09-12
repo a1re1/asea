@@ -1,0 +1,19 @@
+# Godot 4 generated caches
+.godot/
+*.translation
+
+# Harness / local state
+.drip/
+
+# Local logs and captures
+*.log
+/tmp/asea-*.png
+
+# Web export output (generated binaries)
+web/
+*.wasm
+*.pck
+*.zip
+
+# OS noise
+.DS_Store

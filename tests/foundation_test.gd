@@ -18,8 +18,9 @@ func test_project_config() -> void:
 	T.eq(int(cfg.get_value("display", "window/size/viewport_height", 0)), 900,
 			"viewport height 900")
 	for action: String in ["sail_forward", "sail_back", "steer_left", "steer_right",
-			"boost", "brake", "recover_boat", "toggle_chart", "close_chart"]:
+			"brake", "recover_boat", "toggle_chart", "close_chart"]:
 		T.ok(InputMap.has_action(action), "input action registered: %s" % action)
+	T.ok(not InputMap.has_action("boost"), "obsolete engine boost action removed")
 
 
 func test_main_scene_loads_and_runs() -> void:

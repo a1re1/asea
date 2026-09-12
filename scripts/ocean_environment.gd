@@ -3,8 +3,8 @@
 # Main integration: add_child(preload("res://scripts/ocean_environment.gd").new())
 #
 # _ready() constructs, with no external assets or dependencies:
-#   * one ocean surface: 12000x12000 plane at Y=0 (x/z -6000..+6000),
-#     128x128 subdivisions, driven by shaders/ocean.gdshader
+#   * dense near patch ~640 m at 2.5 m spacing (255 subdiv -> 256 quads, 131072 tris)
+#   * low-poly 12 km far sheet at Y=0 with complementary square cutout
 #   * one WorldEnvironment: pastel summery ProceduralSky with a warm sun
 #     disc, sky ambient light, linear tonemap, gentle exponential haze
 #   * one warm DirectionalLight3D with 4-split cascaded shadows
@@ -13,7 +13,12 @@
 extends Node3D
 
 const OCEAN_SIZE := 12000.0
-const OCEAN_SUBDIVISIONS := 128
+const FAR_SUBDIVISIONS := 47
+const NEAR_SIZE := 640.0
+const NEAR_SUBDIVISIONS := 255
+const NEAR_SPACING := NEAR_SIZE / float(NEAR_SUBDIVISIONS + 1)
+const PATCH_HALF := NEAR_SIZE * 0.5
+const WAVE_CULL_MARGIN := 0.5
 
 const CLOUD_CLUSTERS := 16
 const CLOUD_PUFF_Y_MIN := 320.0
@@ -21,6 +26,9 @@ const CLOUD_PUFF_Y_MAX := 560.0
 const CLOUD_SPREAD := 4200.0
 
 var _ocean_material: ShaderMaterial
+var _far_material: ShaderMaterial
+var _near_ocean: MeshInstance3D
+var _far_ocean: MeshInstance3D
 
 
 func _ready() -> void:
@@ -30,25 +38,75 @@ func _ready() -> void:
 	_build_clouds()
 
 
+func update_sailing(pos: Vector2, direction: Vector2, strength: float, elapsed: float) -> void:
+	var snapped := Vector2(
+		snappedf(pos.x, NEAR_SPACING),
+		snappedf(pos.y, NEAR_SPACING)
+	)
+	if _near_ocean != null:
+		_near_ocean.position = Vector3(snapped.x, 0.0, snapped.y)
+	_apply_wave_uniforms(_ocean_material, snapped, direction, strength, elapsed, false)
+	_apply_wave_uniforms(_far_material, snapped, direction, strength, elapsed, true)
+
+
 # --- Ocean -------------------------------------------------------------------
 
+func _make_ocean_material(shader: Shader, far_sheet: bool) -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	mat.set_shader_parameter("wave_time", 0.0)
+	mat.set_shader_parameter("wind_dir", Vector2(0.0, -1.0))
+	mat.set_shader_parameter("wind_strength", 0.0)
+	mat.set_shader_parameter("patch_center", Vector2.ZERO)
+	mat.set_shader_parameter("patch_half", PATCH_HALF)
+	mat.set_shader_parameter("far_sheet", 1.0 if far_sheet else 0.0)
+	return mat
+
+
+func _apply_wave_uniforms(mat: ShaderMaterial, center: Vector2, direction: Vector2, strength: float, elapsed: float, far_sheet: bool) -> void:
+	if mat == null:
+		return
+	var wind := direction.normalized() if direction.length_squared() > 1e-12 else Vector2(0.0, -1.0)
+	mat.set_shader_parameter("wave_time", elapsed)
+	mat.set_shader_parameter("wind_dir", wind)
+	mat.set_shader_parameter("wind_strength", strength)
+	mat.set_shader_parameter("patch_center", center)
+	mat.set_shader_parameter("patch_half", PATCH_HALF)
+	mat.set_shader_parameter("far_sheet", 1.0 if far_sheet else 0.0)
+
+
 func _build_ocean() -> void:
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(OCEAN_SIZE, OCEAN_SIZE)
-	plane.subdivide_width = OCEAN_SUBDIVISIONS
-	plane.subdivide_depth = OCEAN_SUBDIVISIONS
-
 	var shader: Shader = load("res://shaders/ocean.gdshader")
-	_ocean_material = ShaderMaterial.new()
-	_ocean_material.shader = shader
+	_ocean_material = _make_ocean_material(shader, false)
+	_far_material = _make_ocean_material(shader, true)
 
-	var ocean := MeshInstance3D.new()
-	ocean.name = "OceanSurface"
-	ocean.mesh = plane
-	ocean.material_override = _ocean_material
-	ocean.position = Vector3.ZERO
-	ocean.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(ocean)
+	var near_plane := PlaneMesh.new()
+	near_plane.size = Vector2(NEAR_SIZE, NEAR_SIZE)
+	near_plane.subdivide_width = NEAR_SUBDIVISIONS
+	near_plane.subdivide_depth = NEAR_SUBDIVISIONS
+
+	_near_ocean = MeshInstance3D.new()
+	_near_ocean.name = "OceanSurface"
+	_near_ocean.mesh = near_plane
+	_near_ocean.material_override = _ocean_material
+	_near_ocean.position = Vector3.ZERO
+	_near_ocean.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_near_ocean.extra_cull_margin = WAVE_CULL_MARGIN
+	add_child(_near_ocean)
+
+	var far_plane := PlaneMesh.new()
+	far_plane.size = Vector2(OCEAN_SIZE, OCEAN_SIZE)
+	far_plane.subdivide_width = FAR_SUBDIVISIONS
+	far_plane.subdivide_depth = FAR_SUBDIVISIONS
+
+	_far_ocean = MeshInstance3D.new()
+	_far_ocean.name = "OceanFar"
+	_far_ocean.mesh = far_plane
+	_far_ocean.material_override = _far_material
+	_far_ocean.position = Vector3.ZERO
+	_far_ocean.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_far_ocean.extra_cull_margin = WAVE_CULL_MARGIN
+	add_child(_far_ocean)
 
 
 # --- Sky, haze, tonemap ------------------------------------------------------

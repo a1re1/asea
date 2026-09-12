@@ -21,6 +21,9 @@ var _isolated_save: bool = false
 
 func _ready() -> void:
 	boat = get_node_or_null("Boat")
+	if boat:
+		# Upload this frame's wave time and pose after the boat has advanced.
+		boat.process_priority = -1
 	cam = get_node_or_null("SailingCamera")
 	hud = get_node_or_null("HUD")
 	_parse_cli()
@@ -59,6 +62,14 @@ func _process(delta: float) -> void:
 	_frames += 1
 	if not chart_open and boat != null and voyage != null and voyage.has_method("update_position"):
 		voyage.update_position(boat.planar_pos, boat.heading)
+	# Chart freeze stops boat.step (and sim_time); still push last pose so the ocean keeps source data.
+	if _ocean != null and boat != null and _ocean.has_method("update_sailing"):
+		var swell_dir := Vector2(0.0, -1.0)
+		var wind_str := 0.0
+		if boat.wind != null:
+			swell_dir = boat.wind.swell_direction
+			wind_str = boat.wind.strength
+		_ocean.update_sailing(boat.planar_pos, swell_dir, wind_str, boat.sim_time)
 	_save_accum += delta
 	if _save_accum >= 8.0:
 		_save_accum = 0.0

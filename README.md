@@ -21,15 +21,17 @@ bash tools/run.sh -- --capture-map=/tmp/asea-chart.png
 
 ## Controls
 
-- **W/S** target throttle (holds after release; boat glides)
-- **A/D** steer · **Shift** faster · **Space** brake · **R** recover to harbor
+- **W / S** hoist or lower sails gradually (setting holds after release)
+- **Space** drop sails (coast to a stop) · **A/D** steer · **R** recover to harbor
 - **M / Tab** chart · **Escape** close chart · **CHART** button
 - **Right mouse drag** orbit camera · **Mouse wheel** zoom
 - Click a discovered place on the chart or in its sidebar to set a waypoint.
 
-Chart freezes the boat. HUD (cream/ink, 1440×900 stretch) shows region, charted count, compass/wind, knots, waypoint, discovery toast.
+Chart freezes the boat. HUD (cream/ink) shows region, charted count, compass heading, boat speed in knots, live wind FROM (cardinal, bearing, knots), sail percentage, point of sail, waypoint, and discovery toast. Layout is responsive at 1440×900 and 800×500.
 
-Fog clears only around sailed water. Discovery, revealed cells, boat position and the selected waypoint persist between sessions. **R** returns to the harbor while keeping exploration. The fixed east-wind indicator is cosmetic; sailing uses arcade throttle and steering.
+Wind varies gradually. Force comes from heading relative to the wind: a no-go zone of about 40° either side of a headwind (tack with **A/D** to fill the sails); favorable points of sail are faster. This prototype models overworld wind sailing only; walking, puzzles, dungeons, and quests are future work.
+
+Fog clears only around sailed water. Discovery, revealed cells, boat position and the selected waypoint persist between sessions. **R** returns to the harbor while keeping exploration.
 
 Godot stores the voyage in its project user-data folder (on macOS, normally `~/Library/Application Support/Godot/app_userdata/ASEA • The Unwritten Sea/`). To start fresh, close the game and rename `voyage.json` to a backup name before launching again. Verification preserves the normal save; native capture flags use a separate capture voyage.
 

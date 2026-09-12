@@ -11,8 +11,9 @@ const TerrainBuilderScript := preload("res://scripts/terrain_builder.gd")
 const MIN_LARGE_PEAK: float = 6.0
 const MIN_SMALL_PEAK: float = 2.0
 const MIN_COLLIDER_RADIUS_MARGIN: float = 1.0
-# ocean.gdshader: swell_height 0.12, multiplied by 1.0 + 0.667 + 0.375.
-const MAX_WAVE_HEIGHT: float = 0.24504
+# scripts/sea_waves.gd: amplitudes 0.14+0.09+0.05 = HEIGHT_BOUND (0.28 m).
+const WavesScr: GDScript = preload("res://scripts/sea_waves.gd")
+const MAX_WAVE_HEIGHT: float = WavesScr.HEIGHT_BOUND
 const PROPS_PER_ISLAND_MIN: int = 12
 
 var _world: WorldData = null
